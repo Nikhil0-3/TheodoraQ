@@ -1,0 +1,89 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment variables (SENSITIVE!)
+.env
+.env.*
+.env.local
+.env.development
+.env.production
+.env.test
+*.env
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+.vs/
+
+# Build outputs
+dist/
+build/
+out/
+coverage/
+
+# Testing
+coverage/
+.nyc_output/
+test-results/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.cache
+
+# Database files (if using local DB)
+*.sqlite
+*.sqlite3
+*.db
+
+# SSL Certificates (if any)
+*.pem
+*.key
+*.cert
+*.crt
+
+# Misc
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+
+# Markdown documentation files (except README)
+*.md
+!README.md
+
+# Uploaded files
+uploads/*
+!uploads/.gitkeep

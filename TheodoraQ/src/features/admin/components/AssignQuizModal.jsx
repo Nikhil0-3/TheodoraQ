@@ -3,7 +3,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, Button,
   FormControl, InputLabel, Select, MenuItem, TextField,
   Alert, Typography, RadioGroup, FormControlLabel, Radio, FormLabel,
-  Autocomplete, Chip, Box
+  Autocomplete, Chip, Box, Switch
 } from '@mui/material';
 import { useAuth } from '../../auth/contexts/AuthContext';
 
@@ -15,6 +15,7 @@ const AssignQuizModal = ({ open, onClose, quiz, classId, onSuccess, token }) => 
   const [weightage, setWeightage] = useState(0); // Weightage value
   const [weightageType, setWeightageType] = useState('percentage'); // 'percentage' or 'marks'
   const [selectedBranches, setSelectedBranches] = useState([]); // Array of selected branches
+  const [proctoringEnabled, setProctoringEnabled] = useState(false); // AI Proctoring toggle
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -81,6 +82,7 @@ const AssignQuizModal = ({ open, onClose, quiz, classId, onSuccess, token }) => 
       setWeightage(0);
       setWeightageType('percentage');
       setSelectedBranches([]);
+      setProctoringEnabled(false);
       setError('');
       setSuccess('');
     }
@@ -132,7 +134,8 @@ const AssignQuizModal = ({ open, onClose, quiz, classId, onSuccess, token }) => 
           timeLimit: Number(timeLimit),
           weightage: Number(weightage),
           weightageType: weightageType,
-          subgroup: subgroupValue
+          subgroup: subgroupValue,
+          proctoringEnabled: proctoringEnabled
         })
       });
 
@@ -331,6 +334,55 @@ const AssignQuizModal = ({ open, onClose, quiz, classId, onSuccess, token }) => 
               : 'Marks weightage for this assignment. Leave as 0 for unweighted.'
           }
         />
+
+        {/* AI Proctoring Toggle */}
+        <Box sx={{ mt: 3, mb: 1 }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={proctoringEnabled}
+                onChange={(e) => setProctoringEnabled(e.target.checked)}
+                disabled={isLoading || !!success}
+                color="primary"
+              />
+            }
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="body1" fontWeight={600}>
+                  🎥 Enable AI Proctoring
+                </Typography>
+              </Box>
+            }
+          />
+          
+          <Alert severity={proctoringEnabled ? 'warning' : 'info'} variant="outlined" sx={{ mt: 1 }}>
+            <Typography variant="caption" display="block" gutterBottom>
+              <strong>
+                {proctoringEnabled ? '🎥 AI Proctoring Enabled' : 'ℹ️ About AI Proctoring'}
+              </strong>
+            </Typography>
+            <Typography variant="caption" component="div">
+              {proctoringEnabled ? (
+                <>
+                  Students will be monitored during the quiz using:<br/>
+                  • <strong>Face Detection:</strong> Ensures single student presence<br/>
+                  • <strong>Attention Tracking:</strong> Detects looking away from screen<br/>
+                  • <strong>Audio Monitoring:</strong> Identifies conversation or unusual sounds<br/>
+                  • <strong>Movement Analysis:</strong> Flags suspicious movements<br/>
+                  <br/>
+                  Camera and microphone permissions will be requested from students.
+                  All monitoring is done client-side with privacy-first approach.
+                </>
+              ) : (
+                <>
+                  Enable AI-powered proctoring to monitor quiz integrity.<br/>
+                  Requires student camera and microphone access.<br/>
+                  All processing happens in the browser - no video recording.
+                </>
+              )}
+            </Typography>
+          </Alert>
+        </Box>
       </DialogContent>
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={onClose} disabled={isLoading}>

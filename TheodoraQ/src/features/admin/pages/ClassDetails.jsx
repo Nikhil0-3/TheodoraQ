@@ -1,4 +1,3 @@
-// src/pages/ClassDetails.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { Box, Typography, Tabs, Tab, CircularProgress } from '@mui/material';
@@ -8,6 +7,7 @@ import QuizTab from '../components/QuizTab';
 import ResultsTab from '../components/ResultsTab';
 import ClassAnalytics from '../components/ClassAnalytics';
 import ClassSettingsTab from '../components/ClassSettingsTab';
+import IntegrityMonitorTab from '../components/IntegrityMonitorTab';
 import { useAuth } from '../../auth/contexts/AuthContext';
 import Loader from '../../../components/Loader';
 
@@ -44,7 +44,8 @@ const ClassDetails = () => {
       'quizzes': 2,
       'results': 3,
       'analytics': 4,
-      'settings': 5
+      'integrity': 5,
+      'settings': 6
     };
     return tabMap[tabParam] || 0; // Default to Roster (0) if no valid tab param
   };
@@ -126,6 +127,7 @@ const ClassDetails = () => {
           <Tab label="Quizzes" />
           <Tab label="Results" />
           <Tab label="Analytics" />
+          <Tab label="Integrity Monitor" />
           <Tab label="Settings" />
         </Tabs>
       </Box>
@@ -157,6 +159,9 @@ const ClassDetails = () => {
         <ClassAnalytics classId={classId} token={token} />
       </TabPanel>
       <TabPanel value={currentTab} index={5}>
+        <IntegrityMonitorTab classId={classId} />
+      </TabPanel>
+      <TabPanel value={currentTab} index={6}>
         <ClassSettingsTab classData={classData} onClassUpdated={fetchClassDetails} />
       </TabPanel>
     </Box>

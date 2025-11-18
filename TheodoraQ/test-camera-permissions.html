@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera & Microphone Permission Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ccc;
+        }
+
+        .status-card.success {
+            background: #d4edda;
+            border-left-color: #28a745;
+        }
+
+        .status-card.error {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+        }
+
+        .status-card.warning {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+        }
+
+        .status-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .status-message {
+            color: #555;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-bottom: 15px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .video-preview {
+            width: 100%;
+            border-radius: 12px;
+            background: #000;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .video-preview.active {
+            display: block;
+        }
+
+        video {
+            width: 100%;
+            border-radius: 12px;
+            transform: scaleX(-1); /* Mirror effect */
+        }
+
+        .logs {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .logs.active {
+            display: block;
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+        }
+
+        .audio-visualizer {
+            width: 100%;
+            height: 60px;
+            background: #1e1e1e;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .audio-visualizer.active {
+            display: block;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .info-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎥 Camera & Microphone Test</h1>
+        <p class="subtitle">Test if your browser can access camera and microphone for proctoring</p>
+
+        <div id="status-container">
+            <div class="status-card warning">
+                <div class="status-title">⏳ Ready to Test</div>
+                <div class="status-message">Click the button below to test camera and microphone permissions.</div>
+            </div>
+        </div>
+
+        <button id="testBtn" onclick="testPermissions()">
+            🎬 Test Camera & Microphone Access
+        </button>
+
+        <button id="stopBtn" onclick="stopTest()" style="display: none; background: #dc3545;">
+            🛑 Stop Test
+        </button>
+
+        <div id="videoPreview" class="video-preview">
+            <video id="video" autoplay muted playsinline></video>
+        </div>
+
+        <canvas id="audioVisualizer" class="audio-visualizer"></canvas>
+
+        <div class="info-grid" id="infoGrid" style="display: none;">
+            <div class="info-item">
+                <div class="info-label">Camera Status</div>
+                <div class="info-value" id="cameraStatus">-</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Microphone Status</div>
+                <div class="info-value" id="micStatus">-</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Video Tracks</div>
+                <div class="info-value" id="videoTracks">-</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Audio Tracks</div>
+                <div class="info-value" id="audioTracks">-</div>
+            </div>
+        </div>
+
+        <div id="logs" class="logs"></div>
+    </div>
+
+    <script>
+        let stream = null;
+        let audioContext = null;
+        let analyser = null;
+        let animationId = null;
+
+        function log(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            logsDiv.classList.add('active');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            
+            let icon = '📝';
+            if (type === 'success') icon = '✅';
+            if (type === 'error') icon = '❌';
+            if (type === 'warning') icon = '⚠️';
+            
+            entry.textContent = `[${timestamp}] ${icon} ${message}`;
+            logsDiv.appendChild(entry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        function updateStatus(title, message, type = 'warning') {
+            const statusContainer = document.getElementById('status-container');
+            statusContainer.innerHTML = `
+                <div class="status-card ${type}">
+                    <div class="status-title">${title}</div>
+                    <div class="status-message">${message}</div>
+                </div>
+            `;
+        }
+
+        async function testPermissions() {
+            const testBtn = document.getElementById('testBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const videoElement = document.getElementById('video');
+            const videoPreview = document.getElementById('videoPreview');
+            const infoGrid = document.getElementById('infoGrid');
+
+            testBtn.disabled = true;
+            log('Starting permission test...', 'info');
+
+            // Check if getUserMedia is supported
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                updateStatus(
+                    '❌ Not Supported',
+                    'Your browser does not support camera/microphone access. Please use Chrome, Firefox, or Edge.',
+                    'error'
+                );
+                log('getUserMedia not supported in this browser', 'error');
+                testBtn.disabled = false;
+                return;
+            }
+
+            log('✅ getUserMedia is supported', 'success');
+            updateStatus(
+                '⏳ Requesting Permissions...',
+                'Your browser will now show a permission dialog. Please click "Allow" to continue.',
+                'warning'
+            );
+
+            try {
+                log('📱 Browser will now show permission dialog...', 'warning');
+                log('⏳ Please click "Allow" when prompted', 'warning');
+
+                // Request camera and microphone
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'user'
+                    },
+                    audio: true
+                });
+
+                log('✅ Permissions granted!', 'success');
+                
+                // Show video preview
+                videoElement.srcObject = stream;
+                videoPreview.classList.add('active');
+                stopBtn.style.display = 'block';
+                testBtn.style.display = 'none';
+
+                // Get track info
+                const videoTracks = stream.getVideoTracks();
+                const audioTracks = stream.getAudioTracks();
+
+                log(`📹 Video tracks: ${videoTracks.length}`, 'success');
+                log(`🎤 Audio tracks: ${audioTracks.length}`, 'success');
+
+                if (videoTracks.length > 0) {
+                    log(`📹 Camera: ${videoTracks[0].label}`, 'info');
+                    log(`📹 Settings: ${videoTracks[0].getSettings().width}x${videoTracks[0].getSettings().height}`, 'info');
+                }
+
+                if (audioTracks.length > 0) {
+                    log(`🎤 Microphone: ${audioTracks[0].label}`, 'info');
+                }
+
+                // Update status
+                updateStatus(
+                    '✅ Permissions Granted',
+                    'Camera and microphone are working correctly! You can see your camera preview below.',
+                    'success'
+                );
+
+                // Update info grid
+                document.getElementById('cameraStatus').textContent = '✅ Active';
+                document.getElementById('micStatus').textContent = '✅ Active';
+                document.getElementById('videoTracks').textContent = videoTracks.length;
+                document.getElementById('audioTracks').textContent = audioTracks.length;
+                infoGrid.style.display = 'grid';
+
+                // Setup audio visualization
+                setupAudioVisualization();
+
+                log('🎉 Test completed successfully!', 'success');
+                log('✅ Your system is ready for proctored quizzes', 'success');
+
+            } catch (error) {
+                log(`❌ Error: ${error.name} - ${error.message}`, 'error');
+                
+                let errorTitle = '❌ Permission Error';
+                let errorMessage = '';
+
+                switch (error.name) {
+                    case 'NotAllowedError':
+                    case 'PermissionDeniedError':
+                        errorMessage = 'You denied camera/microphone access. Please click the 🔒 icon in your browser\'s address bar and reset permissions, then try again.';
+                        log('User denied permissions', 'error');
+                        break;
+                    
+                    case 'NotFoundError':
+                    case 'DevicesNotFoundError':
+                        errorMessage = 'No camera or microphone found. Please connect a device and try again.';
+                        log('No devices found', 'error');
+                        break;
+                    
+                    case 'NotReadableError':
+                    case 'TrackStartError':
+                        errorMessage = 'Camera/microphone is already in use by another application. Please close other apps (Zoom, Teams, etc.) and try again.';
+                        log('Device already in use', 'error');
+                        break;
+                    
+                    case 'OverconstrainedError':
+                        errorMessage = 'Your camera/microphone doesn\'t support the required settings. Try a different device.';
+                        log('Overconstrained error', 'error');
+                        break;
+                    
+                    case 'SecurityError':
+                        errorMessage = 'Security error. Make sure you\'re on HTTPS or localhost.';
+                        log('Security error', 'error');
+                        break;
+                    
+                    default:
+                        errorMessage = `Unknown error: ${error.message}`;
+                        break;
+                }
+
+                updateStatus(errorTitle, errorMessage, 'error');
+                testBtn.disabled = false;
+            }
+        }
+
+        function setupAudioVisualization() {
+            try {
+                const canvas = document.getElementById('audioVisualizer');
+                canvas.classList.add('active');
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                const source = audioContext.createMediaStreamSource(stream);
+                analyser.fftSize = 256;
+                source.connect(analyser);
+
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+
+                log('🎵 Audio visualizer started', 'success');
+
+                function draw() {
+                    animationId = requestAnimationFrame(draw);
+                    analyser.getByteFrequencyData(dataArray);
+
+                    ctx.fillStyle = '#1e1e1e';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    const barWidth = (canvas.width / bufferLength) * 2.5;
+                    let x = 0;
+
+                    for (let i = 0; i < bufferLength; i++) {
+                        const barHeight = (dataArray[i] / 255) * canvas.height;
+                        
+                        const gradient = ctx.createLinearGradient(0, canvas.height - barHeight, 0, canvas.height);
+                        gradient.addColorStop(0, '#667eea');
+                        gradient.addColorStop(1, '#764ba2');
+                        
+                        ctx.fillStyle = gradient;
+                        ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                        
+                        x += barWidth + 1;
+                    }
+                }
+
+                draw();
+            } catch (error) {
+                log(`⚠️ Audio visualizer error: ${error.message}`, 'warning');
+            }
+        }
+
+        function stopTest() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                log('🛑 Stream stopped', 'info');
+            }
+
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+
+            if (audioContext) {
+                audioContext.close();
+            }
+
+            document.getElementById('video').srcObject = null;
+            document.getElementById('videoPreview').classList.remove('active');
+            document.getElementById('audioVisualizer').classList.remove('active');
+            document.getElementById('testBtn').style.display = 'block';
+            document.getElementById('testBtn').disabled = false;
+            document.getElementById('stopBtn').style.display = 'none';
+            document.getElementById('infoGrid').style.display = 'none';
+
+            updateStatus(
+                '⏹️ Test Stopped',
+                'Click the button above to test again.',
+                'warning'
+            );
+
+            log('✅ Test stopped successfully', 'success');
+        }
+
+        // Log initial browser info
+        log(`Browser: ${navigator.userAgent}`, 'info');
+        log(`Platform: ${navigator.platform}`, 'info');
+        log(`Language: ${navigator.language}`, 'info');
+    </script>
+</body>
+</html>

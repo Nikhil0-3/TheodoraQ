@@ -207,53 +207,99 @@ const SubmissionsPage = () => {
               <TableCell><strong>Registration Number</strong></TableCell>
               <TableCell><strong>Email</strong></TableCell>
               <TableCell><strong>Submitted At</strong></TableCell>
+              <TableCell><strong>Status</strong></TableCell>
+              <TableCell><strong>Activity</strong></TableCell>
               <TableCell align="right"><strong>Score</strong></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {submissions.length > 0 ? (
-              submissions.map((sub, index) => (
-                <TableRow 
-                  key={index} 
-                  hover
-                  onClick={() => navigate(`/admin/submission/${assignmentId}/${sub._id}`)}
-                  sx={{ 
-                    cursor: 'pointer',
-                    '&:hover': {
-                      backgroundColor: 'action.hover',
-                    }
-                  }}
-                >
-                  <TableCell>
-                    {sub.candidateId?.name || 'Unknown'}
-                  </TableCell>
-                  <TableCell>
-                    {sub.candidateId?.registrationNumber || '-'}
-                  </TableCell>
-                  <TableCell>
-                    {sub.candidateId?.email || '-'}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(sub.submittedAt).toLocaleString('en-US', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </TableCell>
-                  <TableCell align="right">
-                    <Chip
-                      label={`${sub.score.toFixed(2)}%`}
-                      color={sub.score >= 70 ? 'success' : sub.score >= 50 ? 'warning' : 'error'}
-                      size="medium"
-                    />
-                  </TableCell>
-                </TableRow>
-              ))
+              submissions.map((sub, index) => {
+                const isSuspicious = sub.tabSwitchCount > 3 || !sub.wasFullscreen;
+                return (
+                  <TableRow 
+                    key={index} 
+                    hover
+                    onClick={() => navigate(`/admin/submission/${assignmentId}/${sub._id}`)}
+                    sx={{ 
+                      cursor: 'pointer',
+                      backgroundColor: isSuspicious ? 'rgba(255, 152, 0, 0.08)' : 'inherit',
+                      '&:hover': {
+                        backgroundColor: isSuspicious ? 'rgba(255, 152, 0, 0.15)' : 'action.hover',
+                      }
+                    }}
+                  >
+                    <TableCell>
+                      {sub.candidateId?.name || 'Unknown'}
+                    </TableCell>
+                    <TableCell>
+                      {sub.candidateId?.registrationNumber || '-'}
+                    </TableCell>
+                    <TableCell>
+                      {sub.candidateId?.email || '-'}
+                    </TableCell>
+                    <TableCell>
+                      {new Date(sub.submittedAt).toLocaleString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </TableCell>
+                    <TableCell>
+                      {sub.isLateSubmission ? (
+                        <Chip
+                          label="Late"
+                          color="warning"
+                          size="small"
+                        />
+                      ) : (
+                        <Chip
+                          label="On Time"
+                          color="success"
+                          size="small"
+                          variant="outlined"
+                        />
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {isSuspicious ? (
+                        <Chip
+                          label={`⚠️ ${sub.tabSwitchCount} switches`}
+                          color="error"
+                          size="small"
+                        />
+                      ) : (
+                        <Chip
+                          label="Clean"
+                          color="success"
+                          size="small"
+                          variant="outlined"
+                        />
+                      )}
+                      {!sub.wasFullscreen && (
+                        <Chip
+                          label="No Fullscreen"
+                          color="error"
+                          size="small"
+                          sx={{ ml: 0.5 }}
+                        />
+                      )}
+                    </TableCell>
+                    <TableCell align="right">
+                      <Chip
+                        label={`${sub.score.toFixed(2)}%`}
+                        color={sub.score >= 70 ? 'success' : sub.score >= 50 ? 'warning' : 'error'}
+                        size="medium"
+                      />
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             ) : (
               <TableRow>
-                <TableCell colSpan={5} align="center">
+                <TableCell colSpan={7} align="center">
                   <Box sx={{ py: 4 }}>
                     <Typography variant="body1" color="text.secondary">
                       No submissions found for this assignment yet.

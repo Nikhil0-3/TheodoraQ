@@ -17,6 +17,7 @@ import {
   Radio,
   FormLabel,
   Divider,
+  Switch,
 } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -31,6 +32,8 @@ const EditAssignmentDialog = ({ open, onClose, assignment, onSuccess }) => {
   const [weightage, setWeightage] = useState('');
   const [weightageType, setWeightageType] = useState('percentage');
   const [allowRetake, setAllowRetake] = useState(false);
+  const [subgroup, setSubgroup] = useState('');
+  const [proctoringEnabled, setProctoringEnabled] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -42,6 +45,8 @@ const EditAssignmentDialog = ({ open, onClose, assignment, onSuccess }) => {
       setWeightage((assignment.weightage || 0).toString());
       setWeightageType(assignment.weightageType || 'percentage');
       setAllowRetake(false);
+      setSubgroup(assignment.subgroup || '');
+      setProctoringEnabled(assignment.proctoringEnabled || false);
       setError('');
     }
   }, [assignment]);
@@ -122,6 +127,8 @@ const EditAssignmentDialog = ({ open, onClose, assignment, onSuccess }) => {
             weightage: weightageNum,
             weightageType: weightageType,
             allowRetake: allowRetake,
+            subgroup: subgroup.trim(),
+            proctoringEnabled: proctoringEnabled,
           }),
         }
       );
@@ -282,6 +289,74 @@ const EditAssignmentDialog = ({ open, onClose, assignment, onSuccess }) => {
                   </Button>
                 </Stack>
               </Box>
+            </Box>
+
+            <Divider />
+
+            {/* Branch Eligibility Section */}
+            <Box>
+              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+                Branch Eligibility (Optional)
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+                Leave empty for all students, or specify branches (e.g., BCE, BCY)
+              </Typography>
+              
+              <TextField
+                fullWidth
+                label="Branch/Subgroup"
+                value={subgroup}
+                onChange={(e) => setSubgroup(e.target.value)}
+                placeholder="e.g., BCE or BCE,BCY,BCS"
+                helperText="Enter branch codes separated by commas for multiple branches. Leave empty for all students."
+              />
+            </Box>
+
+            <Divider />
+
+            {/* AI Proctoring Section */}
+            <Box>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={proctoringEnabled}
+                    onChange={(e) => setProctoringEnabled(e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="body1" fontWeight={600}>
+                      🎥 Enable AI Proctoring
+                    </Typography>
+                  </Box>
+                }
+              />
+              
+              <Alert severity={proctoringEnabled ? 'warning' : 'info'} variant="outlined" sx={{ mt: 1 }}>
+                <Typography variant="caption" display="block" gutterBottom>
+                  <strong>
+                    {proctoringEnabled ? '🎥 AI Proctoring Enabled' : 'ℹ️ About AI Proctoring'}
+                  </strong>
+                </Typography>
+                <Typography variant="caption" component="div">
+                  {proctoringEnabled ? (
+                    <>
+                      Students will be monitored during the quiz using:<br/>
+                      • <strong>Camera & Microphone:</strong> Required permissions<br/>
+                      • <strong>Movement Detection:</strong> Flags suspicious activity<br/>
+                      • <strong>Audio Monitoring:</strong> Detects conversations<br/>
+                      <br/>
+                      All processing is client-side. No video recording.
+                    </>
+                  ) : (
+                    <>
+                      Enable AI-powered proctoring to monitor quiz integrity.<br/>
+                      Requires student camera and microphone access.
+                    </>
+                  )}
+                </Typography>
+              </Alert>
             </Box>
 
             <Divider />

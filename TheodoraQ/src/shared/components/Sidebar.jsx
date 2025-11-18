@@ -6,6 +6,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import ClassIcon from '@mui/icons-material/Class';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import AssessmentIcon from '@mui/icons-material/Assessment';
+import SecurityIcon from '@mui/icons-material/Security';
 import StatsIcon from './icons/StatsIcon';
 
 // We receive props from AdminLayout
@@ -18,6 +19,7 @@ const Sidebar = ({ width, isOpen, onClose, isMobile }) => {
   { text: 'Content Library', icon: <LibraryBooksIcon />, path: '/admin/content' },
   { text: 'Results', icon: <AssessmentIcon />, path: '/admin/results' },
   { text: 'Analytics', icon: <StatsIcon />, path: '/admin/analytics' },
+  { text: 'Integrity Monitor', icon: <SecurityIcon />, path: '/admin/cheat-activity' },
   ];
 
   const handleNavigation = (path) => {

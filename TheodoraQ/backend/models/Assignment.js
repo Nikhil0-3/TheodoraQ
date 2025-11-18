@@ -33,6 +33,35 @@ const submissionSchema = new Schema({
     type: Date,
     default: Date.now,
   },
+  isLateSubmission: {
+    type: Boolean,
+    default: false,
+  },
+  // Anti-cheat tracking
+  tabSwitchCount: {
+    type: Number,
+    default: 0,
+  },
+  escCount: {
+    type: Number,
+    default: 0,
+  },
+  wasFullscreen: {
+    type: Boolean,
+    default: false,
+  },
+  // AI Proctoring data
+  proctoringData: {
+    suspiciousMovements: { type: Number, default: 0 },
+    multipleFacesDetected: { type: Number, default: 0 },
+    noFaceDetected: { type: Number, default: 0 },
+    lookingAway: { type: Number, default: 0 },
+    phoneDetected: { type: Number, default: 0 },
+    audioAnomalies: { type: Number, default: 0 },
+    tabSwitching: { type: Number, default: 0 },
+    totalViolations: { type: Number, default: 0 },
+    timestamps: [{ type: Date }] // When violations occurred
+  },
   answers: [answerSchema], // Array of candidate's answers
 }, { _id: true }); // Keep _id for each submission
 
@@ -76,6 +105,12 @@ const assignmentSchema = new Schema({
   timeLimit: {
     type: Number, // Time in minutes
     required: true,
+  },
+  // Proctoring Settings
+  proctoringEnabled: {
+    type: Boolean,
+    default: false,
+    description: 'Enable AI-powered proctoring for this assignment'
   },
   // Weightage for grading
   weightage: {

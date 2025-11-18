@@ -1,7 +1,7 @@
 import express from 'express';
 import { getCandidateClasses } from '../controllers/classController.js';
 import { getCandidateAssignments, getSingleAssignment, submitQuiz } from '../controllers/assignmentController.js';
-import { bulkInviteCandidates, downloadTemplate, parseFileForPreview, sendBulkInvites } from '../controllers/candidateController.js';
+import { bulkInviteCandidates, downloadTemplate, parseFileForPreview, sendBulkInvites, getClassRoster, getClassLeaderboard } from '../controllers/candidateController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import upload from '../middleware/uploadMiddleware.js';
 
@@ -60,5 +60,17 @@ router.post('/bulk-invite', upload.single('file'), bulkInviteCandidates);
  * Download sample Excel template for bulk upload
  */
 router.get('/download-template', downloadTemplate);
+
+/**
+ * GET /api/candidate/class/:classId/roster
+ * Get class roster (if enabled by admin)
+ */
+router.get('/class/:classId/roster', getClassRoster);
+
+/**
+ * GET /api/candidate/class/:classId/leaderboard
+ * Get class leaderboard with rankings
+ */
+router.get('/class/:classId/leaderboard', getClassLeaderboard);
 
 export default router;

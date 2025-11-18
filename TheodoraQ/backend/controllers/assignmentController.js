@@ -290,13 +290,20 @@ export const getSingleAssignment = async (req, res) => {
       sub => sub.candidateId.toString() === candidateId.toString()
     );
 
+    // Get class data to check late submission settings
+    const ClassModel = (await import('../models/Class.js')).default;
+    const classInfo = await ClassModel.findById(assignment.classId);
+
     // Check if assignment is past due date
     const isPastDue = new Date(assignment.dueDate) < new Date();
+    const allowLateSubmissions = classInfo ? classInfo.allowLateSubmissions : false;
 
     console.log('✅ Sending quiz with', questionsForCandidate.length, 'questions (answers removed)');
     console.log('⏱️ Time limit being sent:', assignment.timeLimit, 'minutes');
     console.log('📊 Has submitted:', !!existingSubmission);
     console.log('📅 Is past due:', isPastDue);
+    console.log('🔓 Allow late submissions:', allowLateSubmissions);
+    console.log('🎥 Proctoring enabled:', assignment.proctoringEnabled || false);
 
     // Send the safe data to the candidate
     res.status(200).json({
@@ -315,6 +322,9 @@ export const getSingleAssignment = async (req, res) => {
         hasSubmitted: !!existingSubmission,
         submissionScore: existingSubmission ? existingSubmission.score : null,
         isPastDue: isPastDue,
+        allowLateSubmissions: allowLateSubmissions,
+        // Include proctoring settings
+        proctoringEnabled: assignment.proctoringEnabled || false,
       },
     });
 
@@ -376,10 +386,10 @@ export const getAssignmentsByClass = async (req, res) => {
 export const updateAssignment = async (req, res) => {
   try {
     const { id } = req.params;
-    const { dueDate, timeLimit, weightage, weightageType, allowRetake } = req.body;
+    const { dueDate, timeLimit, weightage, weightageType, allowRetake, subgroup, proctoringEnabled } = req.body;
     const adminId = req.user?.id || req.user?._id;
 
-    console.log('Attempting to update assignment:', id, { dueDate, timeLimit, weightage, weightageType, allowRetake });
+    console.log('Attempting to update assignment:', id, { dueDate, timeLimit, weightage, weightageType, allowRetake, subgroup, proctoringEnabled });
 
     // Find the assignment
     const assignment = await Assignment.findById(id);
@@ -453,6 +463,18 @@ export const updateAssignment = async (req, res) => {
         });
       }
       assignment.weightageType = weightageType;
+    }
+
+    // Update subgroup if provided
+    if (subgroup !== undefined) {
+      assignment.subgroup = subgroup.trim();
+      console.log(`🎯 Updated subgroup: "${assignment.subgroup}"`);
+    }
+
+    // Update proctoring setting if provided
+    if (proctoringEnabled !== undefined) {
+      assignment.proctoringEnabled = proctoringEnabled;
+      console.log(`🎥 Updated proctoring enabled: ${proctoringEnabled}`);
     }
 
     // If allowRetake is explicitly set to true, clear all submissions
@@ -637,11 +659,17 @@ export const getCandidateAssignments = async (req, res) => {
       const candidateSubmission = assignmentObj.submissions.find(
         sub => sub.candidateId.toString() === candidateId.toString()
       );
+      
+      // Check if class allows showing results to candidates
+      const showScore = classData.showResults && candidateSubmission;
+      
       return {
         ...assignmentObj,
         hasSubmitted: !!candidateSubmission,
-        submissionScore: candidateSubmission ? candidateSubmission.score : null,
+        submissionScore: showScore ? candidateSubmission.score : null,
         submittedAt: candidateSubmission ? candidateSubmission.submittedAt : null,
+        isLateSubmission: candidateSubmission ? candidateSubmission.isLateSubmission : false,
+        allowLateSubmissions: classData.allowLateSubmissions,
       };
     });
 
@@ -669,10 +697,14 @@ export const getCandidateAssignments = async (req, res) => {
 export const submitQuiz = async (req, res) => {
   try {
     const { assignmentId } = req.params;
-    const { answers } = req.body; // Get the candidate's answers from the frontend
+    const { answers, tabSwitchCount = 0, escCount = 0, wasFullscreen = false, proctoringData = null } = req.body; // Get the candidate's answers and anti-cheat data
     const candidateId = req.user?.id || req.user?._id;
 
     console.log('📝 Submitting quiz for assignment:', assignmentId, 'candidate:', candidateId);
+    console.log('🔒 Anti-cheat data - Tab switches:', tabSwitchCount, 'ESC count:', escCount, 'Fullscreen:', wasFullscreen);
+    if (proctoringData) {
+      console.log('🎥 Proctoring data:', proctoringData);
+    }
 
     // 1. Find the assignment and the *full* quiz (with answers)
     const assignment = await Assignment.findById(assignmentId)
@@ -715,6 +747,22 @@ export const submitQuiz = async (req, res) => {
         success: false,
         message: 'You have already submitted this quiz',
       });
+    }
+
+    // 3.5. Check if submission is past due and late submissions are not allowed
+    const isPastDue = new Date() > new Date(assignment.dueDate);
+    const isLateSubmission = isPastDue;
+    
+    if (isPastDue && !classData.allowLateSubmissions) {
+      console.log('❌ Late submissions not allowed for this class');
+      return res.status(403).json({
+        success: false,
+        message: 'This assignment is past due and late submissions are not allowed',
+      });
+    }
+    
+    if (isLateSubmission) {
+      console.log('⚠️ This is a late submission');
     }
 
     // 4. --- GRADING LOGIC ---
@@ -770,13 +818,23 @@ export const submitQuiz = async (req, res) => {
     console.log('✅ Score calculated:', score, '/', totalQuestions, '=', percentageScore.toFixed(2) + '%');
     console.log('📊 Saving', formattedAnswers.length, 'answers');
 
-    // 5. Create the submission record with detailed answers
+    // 5. Create the submission record with detailed answers and anti-cheat data
     const submission = {
       candidateId: candidateId,
       score: percentageScore,
       submittedAt: new Date(),
+      isLateSubmission: isLateSubmission,
+      tabSwitchCount: tabSwitchCount,
+      escCount: escCount,
+      wasFullscreen: wasFullscreen,
       answers: formattedAnswers, // Include the formatted answers
     };
+
+    // Add proctoring data if present
+    if (proctoringData) {
+      submission.proctoringData = proctoringData;
+      console.log('🎥 Proctoring violations saved:', proctoringData.totalViolations);
+    }
 
     // 6. Save the submission to the assignment
     assignment.submissions.push(submission);
@@ -784,13 +842,19 @@ export const submitQuiz = async (req, res) => {
 
     console.log('✅ Quiz submitted successfully!');
 
-    // 7. Send the result back to the candidate
+    // 7. Check if results should be shown to candidates
+    const showScore = classData.showResults;
+    console.log('🔍 Show results to candidate:', showScore);
+
+    // 8. Send the result back to the candidate (conditionally show score)
     res.status(200).json({
       success: true,
-      message: 'Quiz submitted successfully!',
-      score: percentageScore,
-      totalQuestions: totalQuestions,
-      correctCount: score,
+      message: isLateSubmission ? 'Late submission recorded successfully!' : 'Quiz submitted successfully!',
+      score: showScore ? percentageScore : null,
+      totalQuestions: showScore ? totalQuestions : null,
+      correctCount: showScore ? score : null,
+      showResults: showScore,
+      isLateSubmission: isLateSubmission,
     });
 
   } catch (error) {

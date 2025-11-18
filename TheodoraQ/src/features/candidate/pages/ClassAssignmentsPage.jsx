@@ -1,4 +1,3 @@
-// src/pages/candidate/ClassAssignmentsPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -8,6 +7,8 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import PeopleIcon from '@mui/icons-material/People';
+import LeaderboardIcon from '@mui/icons-material/Leaderboard';
 import { useAuth } from '../../auth/contexts/AuthContext';
 import Loader from '../../../components/Loader';
 
@@ -57,13 +58,32 @@ const ClassAssignmentsPage = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Button 
-        startIcon={<ArrowBackIcon />}
-        onClick={() => navigate('/candidate/my-classes')} 
-        sx={{ mb: 3 }}
-      >
-        Back to My Classes
-      </Button>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Button 
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate('/candidate/my-classes')}
+        >
+          Back to My Classes
+        </Button>
+
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button 
+            variant="outlined"
+            startIcon={<PeopleIcon />}
+            onClick={() => navigate(`/candidate/class/${classId}/roster`)}
+          >
+            View Roster
+          </Button>
+          
+          <Button 
+            variant="contained"
+            startIcon={<LeaderboardIcon />}
+            onClick={() => navigate(`/candidate/class/${classId}/leaderboard`)}
+          >
+            Leaderboard
+          </Button>
+        </Box>
+      </Box>
 
       <Typography variant="h4" component="h1" gutterBottom>
         Class Assignments
@@ -89,6 +109,8 @@ const ClassAssignmentsPage = () => {
                   const isOverdue = dueDate < now;
                   const hasSubmitted = assignment.hasSubmitted;
                   const submissionScore = assignment.submissionScore;
+                  const isLateSubmission = assignment.isLateSubmission;
+                  const allowLateSubmissions = assignment.allowLateSubmissions;
                   
                   // Determine button state
                   let buttonProps = {};
@@ -100,12 +122,23 @@ const ClassAssignmentsPage = () => {
                       disabled: true,
                       children: 'Submitted'
                     };
-                  } else if (isOverdue) {
+                  } else if (isOverdue && !allowLateSubmissions) {
+                    // Only disable if overdue AND late submissions not allowed
                     buttonProps = {
                       variant: 'outlined',
                       color: 'error',
                       disabled: true,
                       children: 'Overdue'
+                    };
+                  } else if (isOverdue && allowLateSubmissions) {
+                    // Allow starting overdue quiz if late submissions are enabled
+                    buttonProps = {
+                      variant: 'contained',
+                      color: 'warning',
+                      startIcon: <PlayArrowIcon />,
+                      onClick: () => handleStartQuiz(assignment._id, assignment.quizId?._id),
+                      children: 'Start Quiz (Late)',
+                      disabled: !assignment.quizId
                     };
                   } else {
                     buttonProps = {
@@ -131,14 +164,28 @@ const ClassAssignmentsPage = () => {
                             <Typography variant="h6">
                               {assignment.quizId?.title || 'Untitled Quiz'}
                             </Typography>
-                            {hasSubmitted && (
+                            {hasSubmitted && !isLateSubmission && (
                               <Chip 
                                 label="Submitted" 
                                 color="success" 
                                 size="small" 
                               />
                             )}
-                            {isOverdue && !hasSubmitted && (
+                            {hasSubmitted && isLateSubmission && (
+                              <Chip 
+                                label="Late Submission" 
+                                color="warning" 
+                                size="small" 
+                              />
+                            )}
+                            {isOverdue && !hasSubmitted && allowLateSubmissions && (
+                              <Chip 
+                                label="Overdue - Can Submit Late" 
+                                color="warning" 
+                                size="small" 
+                              />
+                            )}
+                            {isOverdue && !hasSubmitted && !allowLateSubmissions && (
                               <Chip 
                                 label="Overdue" 
                                 color="error" 

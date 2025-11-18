@@ -77,8 +77,6 @@ const CandidateLayout = () => {
     { text: 'Join a Class', path: '/candidate/join-class', icon: <AddCircleIcon /> },
   ];
 
-  const profileItem = { text: 'Profile', path: '/candidate/profile', icon: <PersonIcon /> };
-
   const handleNavigation = (path) => {
     navigate(path);
     if (isMobile) {
@@ -248,15 +246,6 @@ const CandidateLayout = () => {
                 </ListItemButton>
               </ListItem>
             ))}
-          </List>
-          <Divider sx={{ my: 1 }} />
-          <List>
-            <ListItem disablePadding>
-              <ListItemButton onClick={() => handleNavigation(profileItem.path)}>
-                <ListItemIcon>{profileItem.icon}</ListItemIcon>
-                <ListItemText primary={profileItem.text} />
-              </ListItemButton>
-            </ListItem>
           </List>
         </Box>
       </Drawer>

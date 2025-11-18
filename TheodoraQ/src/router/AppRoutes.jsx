@@ -24,6 +24,7 @@ import DetailedReportPage from '../features/admin/pages/DetailedReportPage';
 import Analytics from '../features/admin/pages/Analytics';
 import AdminProfilePage from '../features/admin/pages/ProfilePage';
 import ResultsPage from '../features/admin/pages/ResultsPage';
+import CheatActivityPage from '../features/admin/pages/CheatActivityPage';
 
 // Candidate Pages
 import JoinClassPage from '../features/candidate/pages/JoinClassPage';
@@ -32,6 +33,8 @@ import ClassAssignmentsPage from '../features/candidate/pages/ClassAssignmentsPa
 import TakeQuizPage from '../features/candidate/pages/TakeQuizPage';
 import CandidateDashboard from '../features/candidate/pages/CandidateDashboard';
 import CandidateProfilePage from '../features/candidate/pages/ProfilePage';
+import ClassRosterPage from '../features/candidate/pages/ClassRosterPage';
+import ClassLeaderboardPage from '../features/candidate/pages/ClassLeaderboardPage';
 
 /**
  * Centralized router configuration
@@ -67,6 +70,7 @@ const AppRoutes = () => {
         <Route path="content/edit/:quizId" element={<EditQuizPage />} />
         <Route path="results" element={<ResultsPage />} />
         <Route path="analytics" element={<Analytics />} />
+        <Route path="cheat-activity" element={<CheatActivityPage />} />
         <Route path="assignment/:assignmentId/submissions" element={<SubmissionsPage />} />
         <Route path="submission/:assignmentId/:submissionId" element={<DetailedReportPage />} />
         <Route path="profile" element={<AdminProfilePage />} />
@@ -86,6 +90,8 @@ const AppRoutes = () => {
         <Route path="my-classes" element={<CandidateMyClassesPage />} />
         <Route path="join-class" element={<JoinClassPage />} />
         <Route path="class/:classId/assignments" element={<ClassAssignmentsPage />} />
+        <Route path="class/:classId/roster" element={<ClassRosterPage />} />
+        <Route path="class/:classId/leaderboard" element={<ClassLeaderboardPage />} />
         <Route path="assignment/:assignmentId" element={<TakeQuizPage />} />
         <Route path="profile" element={<CandidateProfilePage />} />
       </Route>

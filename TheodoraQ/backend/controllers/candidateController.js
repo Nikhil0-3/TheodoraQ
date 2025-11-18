@@ -409,3 +409,212 @@ export const downloadTemplate = (req, res) => {
     });
   }
 };
+
+/**
+ * Get class roster for candidates (if enabled by admin)
+ * GET /api/candidate/class/:classId/roster
+ */
+export const getClassRoster = async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const candidateId = req.user?.id || req.user?._id;
+
+    if (!candidateId) {
+      return res.status(401).json({
+        success: false,
+        message: 'You must be logged in to view the roster',
+      });
+    }
+
+    // Find the class
+    const classData = await Class.findById(classId)
+      .populate('students', 'name registrationNumber');
+
+    if (!classData) {
+      return res.status(404).json({
+        success: false,
+        message: 'Class not found',
+      });
+    }
+
+    // Check if the candidate is enrolled in this class
+    const isEnrolled = classData.students.some(
+      student => student._id.toString() === candidateId.toString()
+    );
+
+    if (!isEnrolled) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not enrolled in this class',
+      });
+    }
+
+    // Check if roster is enabled for candidates
+    if (!classData.showRosterToCandidates) {
+      return res.status(403).json({
+        success: false,
+        message: 'Class roster is not available for students',
+      });
+    }
+
+    // Return class data with roster
+    res.status(200).json({
+      success: true,
+      data: {
+        _id: classData._id,
+        title: classData.title,
+        courseCode: classData.courseCode,
+        semester: classData.semester,
+        academicYear: classData.academicYear,
+        students: classData.students,
+      },
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching class roster:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch class roster',
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Get class leaderboard for candidates
+ * GET /api/candidate/class/:classId/leaderboard
+ */
+export const getClassLeaderboard = async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const candidateId = req.user?.id || req.user?._id;
+
+    if (!candidateId) {
+      return res.status(401).json({
+        success: false,
+        message: 'You must be logged in to view the leaderboard',
+      });
+    }
+
+    // Import Assignment and User models
+    const Assignment = (await import('../models/Assignment.js')).default;
+    const User = (await import('../models/User.js')).default;
+
+    // Find the class
+    const classData = await Class.findById(classId).populate('students', 'name registrationNumber');
+
+    if (!classData) {
+      return res.status(404).json({
+        success: false,
+        message: 'Class not found',
+      });
+    }
+
+    // Check if the candidate is enrolled in this class
+    const isEnrolled = classData.students.some(
+      student => student._id.toString() === candidateId.toString()
+    );
+
+    if (!isEnrolled) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not enrolled in this class',
+      });
+    }
+
+    // Check if leaderboard is enabled for candidates
+    if (!classData.showLeaderboardToCandidates) {
+      return res.status(403).json({
+        success: false,
+        message: 'Class leaderboard is not available for candidates',
+      });
+    }
+
+    // Get all assignments for this class
+    const assignments = await Assignment.find({ classId })
+      .populate('submissions.candidateId', 'name registrationNumber');
+
+    // Calculate rankings
+    const studentStats = {};
+
+    // Initialize stats for all enrolled students
+    classData.students.forEach(student => {
+      studentStats[student._id.toString()] = {
+        userId: student._id,
+        name: student.name,
+        registrationNumber: student.registrationNumber,
+        totalAssignments: assignments.length,
+        completedAssignments: 0,
+        totalScore: 0,
+        averageScore: 0,
+      };
+    });
+
+    // Calculate scores from submissions
+    assignments.forEach(assignment => {
+      assignment.submissions.forEach(submission => {
+        const studentId = submission.candidateId._id.toString();
+        if (studentStats[studentId]) {
+          studentStats[studentId].completedAssignments += 1;
+          studentStats[studentId].totalScore += submission.score || 0;
+        }
+      });
+    });
+
+    // Calculate average scores and completion percentage
+    Object.values(studentStats).forEach(stat => {
+      if (stat.completedAssignments > 0) {
+        stat.averageScore = stat.totalScore / stat.completedAssignments;
+        stat.completionRate = (stat.completedAssignments / stat.totalAssignments) * 100;
+      } else {
+        stat.completionRate = 0;
+      }
+    });
+
+    // Sort by: 1) Completion rate (higher first), 2) Average score (higher first), 3) Total score (higher first)
+    // This ensures students who complete more quizzes rank higher
+    // Among those with same completion, higher average wins
+    const rankings = Object.values(studentStats)
+      .sort((a, b) => {
+        // First priority: Completion rate (students who completed more quizzes)
+        if (b.completionRate !== a.completionRate) {
+          return b.completionRate - a.completionRate;
+        }
+        // Second priority: Average score (if completion rate is same)
+        if (b.averageScore !== a.averageScore) {
+          return b.averageScore - a.averageScore;
+        }
+        // Third priority: Total score (tiebreaker)
+        return b.totalScore - a.totalScore;
+      })
+      .map((student, index) => ({
+        ...student,
+        rank: index + 1,
+      }));
+
+    // Find current user's rank and score
+    const currentUserStats = rankings.find(r => r.userId.toString() === candidateId.toString());
+    const currentUserRank = currentUserStats ? currentUserStats.rank : null;
+    const currentUserScore = currentUserStats ? currentUserStats.averageScore : 0;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        classTitle: classData.title,
+        courseCode: classData.courseCode,
+        rankings,
+        currentUserRank,
+        currentUserScore,
+      },
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching class leaderboard:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch class leaderboard',
+      error: error.message,
+    });
+  }
+};
+

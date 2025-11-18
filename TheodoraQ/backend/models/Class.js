@@ -37,6 +37,36 @@ const classSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true,
+  },
+  
+  // Class settings
+  allowLateSubmissions: {
+    type: Boolean,
+    default: true,
+  },
+  autoGrading: {
+    type: Boolean,
+    default: true,
+  },
+  showResults: {
+    type: Boolean,
+    default: true,
+  },
+  showRosterToCandidates: {
+    type: Boolean,
+    default: false,
+  },
+  showLeaderboardToCandidates: {
+    type: Boolean,
+    default: false,
+  },
+  semester: {
+    type: String,
+    default: '',
+  },
+  academicYear: {
+    type: String,
+    default: '',
   }
 }, { 
   timestamps: true // Adds `createdAt` and `updatedAt` fields

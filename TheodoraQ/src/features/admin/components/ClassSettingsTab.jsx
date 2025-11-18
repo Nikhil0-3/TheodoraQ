@@ -40,8 +40,9 @@ const ClassSettingsTab = ({ classData, onClassUpdated }) => {
   
   // Settings states
   const [allowLateSubmissions, setAllowLateSubmissions] = useState(classData?.allowLateSubmissions ?? true);
-  const [autoGrading, setAutoGrading] = useState(classData?.autoGrading ?? true);
   const [showResults, setShowResults] = useState(classData?.showResults ?? true);
+  const [showRosterToCandidates, setShowRosterToCandidates] = useState(classData?.showRosterToCandidates ?? false);
+  const [showLeaderboardToCandidates, setShowLeaderboardToCandidates] = useState(classData?.showLeaderboardToCandidates ?? false);
   
   // UI states
   const [isUpdating, setIsUpdating] = useState(false);
@@ -71,9 +72,10 @@ const ClassSettingsTab = ({ classData, onClassUpdated }) => {
           semester,
           academicYear,
           allowLateSubmissions,
-          autoGrading,
           showResults,
-        })
+          showRosterToCandidates,
+          showLeaderboardToCandidates,
+        }),
       });
 
       const result = await response.json();
@@ -283,15 +285,15 @@ const ClassSettingsTab = ({ classData, onClassUpdated }) => {
             <FormControlLabel
               control={
                 <Switch
-                  checked={autoGrading}
-                  onChange={(e) => setAutoGrading(e.target.checked)}
+                  checked={showResults}
+                  onChange={(e) => setShowResults(e.target.checked)}
                 />
               }
               label={
                 <Box>
-                  <Typography variant="body1">Auto-Grading</Typography>
+                  <Typography variant="body1">Show Results to Candidates</Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Automatically grade quiz submissions
+                    Candidates can view their quiz results immediately after submission
                   </Typography>
                 </Box>
               }
@@ -300,15 +302,32 @@ const ClassSettingsTab = ({ classData, onClassUpdated }) => {
             <FormControlLabel
               control={
                 <Switch
-                  checked={showResults}
-                  onChange={(e) => setShowResults(e.target.checked)}
+                  checked={showRosterToCandidates}
+                  onChange={(e) => setShowRosterToCandidates(e.target.checked)}
                 />
               }
               label={
                 <Box>
-                  <Typography variant="body1">Show Results to Students</Typography>
+                  <Typography variant="body1">Show Roster to Candidates</Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Students can view their quiz results immediately after submission
+                    Candidates can view the list of all enrolled students in the class
+                  </Typography>
+                </Box>
+              }
+            />
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={showLeaderboardToCandidates}
+                  onChange={(e) => setShowLeaderboardToCandidates(e.target.checked)}
+                />
+              }
+              label={
+                <Box>
+                  <Typography variant="body1">Show Leaderboard to Candidates</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Candidates can view class rankings and performance leaderboard
                   </Typography>
                 </Box>
               }

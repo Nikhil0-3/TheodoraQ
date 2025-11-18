@@ -63,6 +63,54 @@ router.get('/:id', getClassById);
 router.post('/:id/remove-student', removeStudentFromClass);
 
 /**
+ * PATCH /api/classes/:id/regenerate-invite
+ * Regenerate invite code for a class
+ */
+router.patch('/:id/regenerate-invite', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const adminId = req.user?.id || req.user?._id;
+
+    const Class = (await import('../models/Class.js')).default;
+    const classData = await Class.findById(id);
+
+    if (!classData) {
+      return res.status(404).json({
+        success: false,
+        message: 'Class not found',
+      });
+    }
+
+    // Check if user is the admin of this class
+    if (classData.adminId.toString() !== adminId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to modify this class',
+      });
+    }
+
+    // Generate new invite code
+    const newInviteCode = `${classData.courseCode.toUpperCase()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+    classData.inviteCode = newInviteCode;
+    await classData.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Invite code regenerated successfully',
+      data: {
+        inviteCode: newInviteCode,
+      },
+    });
+  } catch (error) {
+    console.error('Error regenerating invite code:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+    });
+  }
+});
+
+/**
  * PUT /api/classes/:id
  * Update a class
  */

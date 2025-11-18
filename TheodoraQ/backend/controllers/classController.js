@@ -167,7 +167,18 @@ export const getClassById = async (req, res) => {
 export const updateClass = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, courseCode, description } = req.body;
+    const { 
+      title, 
+      courseCode, 
+      description, 
+      semester, 
+      academicYear,
+      allowLateSubmissions,
+      autoGrading,
+      showResults,
+      showRosterToCandidates,
+      showLeaderboardToCandidates
+    } = req.body;
 
     // First, find the class to check ownership
     const classToUpdate = await Class.findById(id);
@@ -188,10 +199,23 @@ export const updateClass = async (req, res) => {
       });
     }
 
+    // Prepare update object with only provided fields
+    const updateData = {};
+    if (title !== undefined) updateData.title = title;
+    if (courseCode !== undefined) updateData.courseCode = courseCode;
+    if (description !== undefined) updateData.description = description;
+    if (semester !== undefined) updateData.semester = semester;
+    if (academicYear !== undefined) updateData.academicYear = academicYear;
+    if (allowLateSubmissions !== undefined) updateData.allowLateSubmissions = allowLateSubmissions;
+    if (autoGrading !== undefined) updateData.autoGrading = autoGrading;
+    if (showResults !== undefined) updateData.showResults = showResults;
+    if (showRosterToCandidates !== undefined) updateData.showRosterToCandidates = showRosterToCandidates;
+    if (showLeaderboardToCandidates !== undefined) updateData.showLeaderboardToCandidates = showLeaderboardToCandidates;
+
     // Now update the class
     const updatedClass = await Class.findByIdAndUpdate(
       id,
-      { title, courseCode, description },
+      updateData,
       { new: true, runValidators: true }
     );
 
@@ -390,11 +414,29 @@ export const removeStudentFromClass = async (req, res) => {
     );
     await classDoc.save();
 
+    // Remove all submissions from this student in assignments for this class
+    const Assignment = (await import('../models/Assignment.js')).default;
+    const assignments = await Assignment.find({ classId: id });
+
+    let totalSubmissionsRemoved = 0;
+    for (const assignment of assignments) {
+      const initialLength = assignment.submissions.length;
+      assignment.submissions = assignment.submissions.filter(
+        (sub) => sub.candidateId.toString() !== studentId.toString()
+      );
+      const removedCount = initialLength - assignment.submissions.length;
+      if (removedCount > 0) {
+        await assignment.save();
+        totalSubmissionsRemoved += removedCount;
+      }
+    }
+
     console.log('✅ Student removed successfully');
+    console.log(`🗑️ Removed ${totalSubmissionsRemoved} submission(s) from assignments`);
 
     res.status(200).json({
       success: true,
-      message: 'Student removed from class successfully',
+      message: `Student removed from class successfully. ${totalSubmissionsRemoved} submission(s) deleted.`,
       data: classDoc,
     });
 

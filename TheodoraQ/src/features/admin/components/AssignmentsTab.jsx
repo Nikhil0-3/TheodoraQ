@@ -404,6 +404,7 @@ const AssignmentsTab = ({ classId }) => {
                     <TableCell><strong>Student Name</strong></TableCell>
                     <TableCell><strong>Email</strong></TableCell>
                     <TableCell><strong>Score</strong></TableCell>
+                    <TableCell><strong>Status</strong></TableCell>
                     <TableCell><strong>Submitted At</strong></TableCell>
                   </TableRow>
                 </TableHead>
@@ -418,6 +419,22 @@ const AssignmentsTab = ({ classId }) => {
                           color={submission.score >= 70 ? 'success' : submission.score >= 50 ? 'warning' : 'error'}
                           size="small"
                         />
+                      </TableCell>
+                      <TableCell>
+                        {submission.isLateSubmission ? (
+                          <Chip
+                            label="Late"
+                            color="warning"
+                            size="small"
+                          />
+                        ) : (
+                          <Chip
+                            label="On Time"
+                            color="success"
+                            size="small"
+                            variant="outlined"
+                          />
+                        )}
                       </TableCell>
                       <TableCell>
                         {new Date(submission.submittedAt).toLocaleString('en-US', {
